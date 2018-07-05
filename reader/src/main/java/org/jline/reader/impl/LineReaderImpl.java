@@ -371,6 +371,11 @@ public class LineReaderImpl implements LineReader, Flushable
     // Line Reading
     //
 
+    @Override
+    public boolean isReading() {
+        return this.reading;
+    }
+
     /**
      * Read the next line and return the contents of the buffer.
      *
@@ -464,6 +469,7 @@ public class LineReaderImpl implements LineReader, Flushable
         boolean dumb = Terminal.TYPE_DUMB.equals(terminal.getType())
                     || Terminal.TYPE_DUMB_COLOR.equals(terminal.getType());
         try {
+            synchronized (this) {
             if (reading) {
                 throw new IllegalStateException();
             }
@@ -542,6 +548,7 @@ public class LineReaderImpl implements LineReader, Flushable
             // Draw initial prompt
             redrawLine();
             redisplay();
+            }
 
             while (true) {
 
@@ -553,6 +560,7 @@ public class LineReaderImpl implements LineReader, Flushable
                 if (o == null) {
                     throw new EndOfFileException();
                 }
+                synchronized (this) {
                 Log.trace("Binding: ", o);
                 if (buf.length() == 0 && getLastBinding().charAt(0) == originalAttributes.getControlChar(ControlChar.VEOF)) {
                     throw new EndOfFileException();
@@ -603,6 +611,7 @@ public class LineReaderImpl implements LineReader, Flushable
                 if (!dumb) {
                     redisplay();
                 }
+                }
             }
         } catch (IOError e) {
             if (e.getCause() instanceof InterruptedIOException) {
@@ -612,6 +621,7 @@ public class LineReaderImpl implements LineReader, Flushable
             }
         }
         finally {
+            synchronized (this) {
             cleanup();
             reading = false;
             if (originalAttributes != null) {
@@ -625,6 +635,7 @@ public class LineReaderImpl implements LineReader, Flushable
             }
             if (previousContHandler != null) {
                 terminal.handle(Signal.CONT, previousContHandler);
+            }
             }
         }
     }

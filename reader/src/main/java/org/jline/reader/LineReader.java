@@ -424,6 +424,8 @@ public interface LineReader {
         PASTE
     }
 
+    boolean isReading();
+
     /**
      * Read the next line and return the contents of the buffer.
      *
