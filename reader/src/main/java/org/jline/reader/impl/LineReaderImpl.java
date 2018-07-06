@@ -648,7 +648,7 @@ public class LineReaderImpl implements LineReader, Flushable
             println(str);
             redisplay(true);
         } else {
-            println(str);
+            terminal.writer().println(str);
         }
     }
 
