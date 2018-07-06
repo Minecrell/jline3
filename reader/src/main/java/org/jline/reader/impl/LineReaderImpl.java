@@ -658,6 +658,24 @@ public class LineReaderImpl implements LineReader, Flushable
     }
 
     @Override
+    public synchronized void printAbove(String str) {
+        if (reading) {
+            clear();
+            print(str);
+            redrawLine();
+            redisplay(true);
+        } else {
+            print(str);
+            terminal.writer().flush();
+        }
+    }
+
+    @Override
+    public void printAbove(AttributedString str) {
+        printAbove(str.toAnsi(terminal));
+    }
+
+    @Override
     public synchronized boolean isReading() {
         return reading;
     }

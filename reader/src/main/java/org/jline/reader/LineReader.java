@@ -566,6 +566,24 @@ public interface LineReader {
     void printlnAbove(AttributedString str);
 
     /**
+     * Prints a string before the prompt and redraw everything.
+     * If the LineReader is not actually reading a line, the string will simply be printed to the terminal.
+     *
+     * @see #printAbove(AttributedString)
+     * @param str the string to print
+     */
+    void printAbove(String str);
+
+    /**
+     * Prints a string before the prompt and redraw everything.
+     * If the LineReader is not actually reading a line, the string will simply be printed to the terminal.
+     *
+     * @see #printAbove(String)
+     * @param str the string to print
+     */
+    void printAbove(AttributedString str);
+
+    /**
      * Check if a thread is currently in a <code>readLine()</code> call.
      *
      * @return <code>true</code> if there is an ongoing <code>readLine()</code> call.
