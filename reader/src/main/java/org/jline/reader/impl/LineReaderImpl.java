@@ -457,11 +457,6 @@ public class LineReaderImpl implements LineReader, Flushable
         // prompt may be null
         // maskingCallback may be null
         // buffer may be null
-
-        if (!reading.compareAndSet(false, true)) {
-            throw new IllegalStateException();
-        }
-
         Thread readLineThread = Thread.currentThread();
         SignalHandler previousIntrHandler = null;
         SignalHandler previousWinchHandler = null;
@@ -504,6 +499,9 @@ public class LineReaderImpl implements LineReader, Flushable
             }
 
             synchronized (displayLock) {
+                if (!reading.compareAndSet(false, true)) {
+                    throw new IllegalStateException();
+                }
 
                 previousIntrHandler = terminal.handle(Signal.INT, signal -> readLineThread.interrupt());
                 previousWinchHandler = terminal.handle(Signal.WINCH, this::handleSignal);
