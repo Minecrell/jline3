@@ -214,8 +214,8 @@ public class LineReaderImpl implements LineReader, Flushable
      * Current internal state of the line reader
      */
     protected State   state = State.DONE;
-    protected final AtomicBoolean reading = new AtomicBoolean();
-    protected final Object displayLock = new Object();
+    protected final AtomicBoolean startedReading = new AtomicBoolean();
+    protected boolean reading;
 
     protected Supplier<AttributedString> post;
 
@@ -458,7 +458,7 @@ public class LineReaderImpl implements LineReader, Flushable
         // maskingCallback may be null
         // buffer may be null
 
-        if (!reading.compareAndSet(false, true)) {
+        if (!startedReading.compareAndSet(false, true)) {
             throw new IllegalStateException();
         }
 
@@ -503,7 +503,8 @@ public class LineReaderImpl implements LineReader, Flushable
                 history.attach(this);
             }
 
-            synchronized (displayLock) {
+            synchronized (this) {
+                this.reading = true;
 
                 previousIntrHandler = terminal.handle(Signal.INT, signal -> readLineThread.interrupt());
                 previousWinchHandler = terminal.handle(Signal.WINCH, this::handleSignal);
@@ -577,7 +578,7 @@ public class LineReaderImpl implements LineReader, Flushable
                     regionActive = RegionType.NONE;
                 }
 
-                synchronized (displayLock) {
+                synchronized (this) {
                     // Get executable widget
                     Buffer copy = buf.copy();
                     Widget w = getWidget(o);
@@ -619,7 +620,9 @@ public class LineReaderImpl implements LineReader, Flushable
             }
         }
         finally {
-            synchronized (displayLock) {
+            synchronized (this) {
+                this.reading = false;
+
                 cleanup();
                 if (originalAttributes != null) {
                     terminal.setAttributes(originalAttributes);
@@ -634,20 +637,18 @@ public class LineReaderImpl implements LineReader, Flushable
                     terminal.handle(Signal.CONT, previousContHandler);
                 }
             }
-            reading.set(false);
+            startedReading.set(false);
         }
     }
 
     @Override
-    public void printlnAbove(String str) {
-        synchronized (displayLock) {
-            if (isReading()) {
-                clear();
-                println(str);
-                redisplay(true);
-            } else {
-                println(str);
-            }
+    public synchronized void printlnAbove(String str) {
+        if (reading) {
+            clear();
+            println(str);
+            redisplay(true);
+        } else {
+            println(str);
         }
     }
 
@@ -657,8 +658,8 @@ public class LineReaderImpl implements LineReader, Flushable
     }
 
     @Override
-    public boolean isReading() {
-        return reading.get();
+    public synchronized boolean isReading() {
+        return reading;
     }
 
     /* Make sure we position the cursor on column 0 */
@@ -698,8 +699,8 @@ public class LineReaderImpl implements LineReader, Flushable
     }
 
     @Override
-    public void callWidget(String name) {
-        if (!reading.get()) {
+    public synchronized void callWidget(String name) {
+        if (!reading) {
             throw new IllegalStateException("Widgets can only be called during a `readLine` call");
         }
         try {
@@ -835,7 +836,7 @@ public class LineReaderImpl implements LineReader, Flushable
             return false;
         }
         this.keyMap = name;
-        if (reading.get()) {
+        if (reading) {
             callWidget(CALLBACK_KEYMAP);
         }
         return true;
